@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="dropzone-container" class="w-full h-[100vh] flex items-center justify-center p-20">
+        <div id="dropzone" class="flex flex-col items-center justify-center gap-2 w-full h-full border border-dashed border-gray-700 rounded-[30px]">
+            <input class="hidden" id="file" type="file" accept="image/*" />
+            <label for="file" class="font-semibold text-2xl">Upload an image</label>
+            <button id="file-button" class="flex items-center gap-2 bg-gray-700 hover:bg-gray-500 duration-200 text-white px-4 py-2 rounded-md">Upload <i class="bi bi-upload"></i></button>
+            <div class="text-sm text-gray-700">Or drag and drop here</div>
+        </div>
+    </div>
+    <div id="image-container" class="hidden p-20 h-[100vh] items-center justify-center">
+        <div class="flex gap-5 items-center w-full rounded-[20px] overflow-clip shadow-lg shadow-gray-400">
+            <div>
+                <img class="max-w-[400px]" id="image" />
+            </div>
+            <div class="flex items-center justify-center w-full p-5">
+                <i id="loader" class="animate-spin bi bi-arrow-clockwise"></i>
+                <div id="data-container" class="hidden flex flex-col gap-2 w-full">
+                    <div class="text-2xl font-medium">Predictions:</div>
+                    <ol id="data" class="list-decimal"></ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js" integrity="sha512-uMtXmF28A2Ab/JJO2t/vYhlaa/3ahUOgj1Zf27M5rOo8/+fcTUVH0/E0ll68njmjrLqOBjXM3V9NiPFL5ywWPQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        const dropzoneContainer = document.querySelector("#dropzone-container")
+        const imageContainer = document.querySelector("#image-container")
+        
+        const dropzone = document.querySelector("#dropzone")
+        const fileInput = document.querySelector("#file")
+        const fileButton = document.querySelector("#file-button")
+        const image = document.querySelector("#image")
+        const loader = document.querySelector("#loader")
+        const dataContainer = document.querySelector("#data-container")
+        const data = document.querySelector("#data")
+
+        fileButton.addEventListener('click', () => {
+            fileInput.click()
+        })
+
+        fileInput.addEventListener('change', e => {
+            const file = e.target.files[0]
+            handleFile(file)
+        })
+
+        dropzone.addEventListener('dragover', e => e.preventDefault())
+        dropzone.addEventListener('drop', e => {
+            e.preventDefault()
+            const file = e.dataTransfer.files[0]
+            handleFile(file)
+        })
+
+        function handleFile(file) {
+            const fr = new FileReader()
+            fr.onload = e => {
+                handleImage(e.target.result)
+            }
+            fr.readAsDataURL(file)
+        }
+
+        function handleImage(img) {
+            dropzoneContainer.classList.remove('flex')
+            dropzoneContainer.classList.add('hidden')
+            imageContainer.classList.remove('hidden')
+            imageContainer.classList.add('flex')
+            image.src = img
+
+            getData(img)
+        }
+
+        async function getData(img) {
+            const res = await axios.post('http://localhost:5000', {
+                image: img.split(',')[1]
+            })
+            const predictions = res.data.prediction
+
+            predictions.forEach(prediction => {
+                const li = document.createElement('li')
+                li.innerText = prediction.split('_').map(el => el[0].toUpperCase()+el.substr(1)).join(' ')
+                data.appendChild(li)
+            })
+            loader.classList.add('hidden')
+            dataContainer.classList.remove('hidden')
+        }
+    </script>
+</body>
+</html>
